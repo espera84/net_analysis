@@ -1,0 +1,9 @@
+{
+    "Path":"C:/Users/emili/Desktop/CNR/2023-24/figure4ae_data_code/codice_python/sim/sim_dal_20_6/a5fbb013-e72a-4f6a-9e33-4bf6460b018e/",
+    "Time_setting": {
+            "Start_time": 0,
+            "simulation_time": 20000,
+            "temporal_bin_size":10
+        },
+    "n_pezzi":100
+}
