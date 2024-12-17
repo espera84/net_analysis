@@ -1,0 +1,12 @@
+{
+	"start_time":30000,
+	"end_time":40000,
+	"bins_dimension":20,
+	"percentual_of_firing_bins_for_active":0.2,
+	"percentual_of_egual_bins_for_correlation":0.1,
+    "n_shift":0,
+	"n_of_neurons_max_to_select":288027,
+	"n_of_neurons_min_for_connected_component":30,
+	"n_of_neurons_min_for_clique":20
+	
+}
