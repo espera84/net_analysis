@@ -1,0 +1,14 @@
+{
+	"start_time":30000,
+	"end_time":40000,
+	"neuron_type_to_analize":"all",
+	"minimum_number_of_neurons_for_voxel_to_plot":20,
+	"minimum_mean_number_of_spikes_for_neuron_in_voxel_to_plot":25,
+    "folder_simulation_name":"sl9_5-1-5-1",
+	"side_length_of_the_voxel":200,
+	"distance_between_voxel_centers":100,
+	"freq_buond_down":6.5,
+	"freq_buond_up":7.5,
+	"threshold_perc_amp":0.04
+	
+}

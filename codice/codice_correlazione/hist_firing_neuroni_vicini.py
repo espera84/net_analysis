@@ -63,16 +63,17 @@ def fourier_analysis(signal):
 
     return freq, amplitude, phase
 
-def save_raster_all2(list_id_neuroni):
+def select_spk_for_voxel(list_id_neuroni):
 
     global t_initial_analysis,t_final_analysis
     spk = []
 
     color = np.array([])
-    plt.figure()
+    #plt.figure()
     pos_n=1
     k=0
     for j in range(list_id_neuroni.__len__()):
+        i=0
         id_neuroni=list_id_neuroni[j]
         first_neuron=True
         print("lista", j)
@@ -114,25 +115,6 @@ def save_raster_all2(list_id_neuroni):
     # plt.savefig(results_sub_path + "r_cc.svg")
     # plt.clf()
     return cl_spk,color
-
-
-def calcola_neuroni_vicini(i_iniz,inter):
-
-    global f_pos,pos_neuron_list,posizioni_centri,distanza_massima
-    for i in range(i_iniz,i_iniz+inter):
-        print(i)
-        print('calc dist')
-        distanze_from_pyr=f_pos[pos_neuron_list[10]][:,1:]-posizioni_centri[i]
-        print('calc comp dist')
-        is_comp_dist_min_dist_max = distanze_from_pyr < distanza_massima
-        print('calc is near')
-        is_neuron_near=np.logical_and(is_comp_dist_min_dist_max[:,0],is_comp_dist_min_dist_max[:,1],is_comp_dist_min_dist_max[:,2])
-        print('add neuron')
-        neurons_near_to_center[i]=[]
-        neurons_near_to_center[i].append(f_pos[pos_neuron_list[10]][is_neuron_near,0])
-        print('neuron added')
-    print("centro end" + str(i_iniz))
-
 
 
 def plot_prerdecessori(id,n_pred):
@@ -347,19 +329,14 @@ def plot_prerdecessori(id,n_pred):
 
 
 
-n_sim=1
 
-
-neu_min_per_blocco=0
-neu_min_per_blocco_to_plot=20
-sim_path= "C:/Users/emili/Desktop/CNR/2023-24/figure4ae_data_code/codice_python/sim/sim_Giulia_17_10/shuffle_bkg_5hz_5151/"
-sim_name="sl9-1000_p2p5_i2i1_i2p5_p2i1_8dc41615-d5ce-489e-9a18-fc8709a8346b"
 current_path = os.getcwd()
 parent_path = os.path.dirname(current_path)
-sim_path= parent_path+"/input_data/sim/"+sim_name+"/"
+parent_path = os.path.dirname(parent_path)
+
 #sim_path= "C:/Users/emili/Desktop/CNR/2023-24/figure4ae_data_code/codice_python/sim/sim_Giulia_17_10/pruning1_bkg_5hz_5151/"
 data_net_path=parent_path+"/input_data/data_net/"
-sigla="sl9_"
+sigla="sl9"
 #sigla="shuffle"
 #sigla="pruning1"
 # sim_path[1] = "C:/Users/emili/Desktop/CNR/2023-24/figure4ae_data_code/codice_python/sim/sim_michele_29_8/ls5-1000_p2p5_i2i1_i2p5_p2i1_a3bb1d41-87b5-4397-8bb3-275a53c5efb6/"
@@ -370,17 +347,23 @@ sigla="sl9_"
 
 
 
-setting_file = "./configuration.json"
+setting_file = "./h_f_configuration.json"
 sim_conf = json.load(open('%s' % (setting_file), 'r'))
 t_initial_analysis = sim_conf['start_time']
 t_final_analysis = sim_conf['end_time']  # 0#5000#
-interval_dim = sim_conf['bins_dimension']
-n_workers =2
-perc_attivi = sim_conf['percentual_of_firing_bins_for_active']
-soglia_attivi = perc_attivi * (t_final_analysis - t_initial_analysis) / interval_dim
-perc_corr = sim_conf['percentual_of_egual_bins_for_correlation']
-soglia_di_correlazione = perc_corr * (t_final_analysis - t_initial_analysis) / interval_dim
-n_shift = sim_conf['n_shift']
+modality=sim_conf['neuron_type_to_analize']#'all'#'pyr'#'int'#
+neu_min_per_blocco=0
+neu_min_per_blocco_to_plot=sim_conf['minimum_number_of_neurons_for_voxel_to_plot']#100
+sim_name=sim_conf["folder_simulation_name"]#"sl9_9-1-9-1"
+distanza_massima=int(sim_conf['side_length_of_the_voxel']/2)
+min_spk=sim_conf["minimum_mean_number_of_spikes_for_neuron_in_voxel_to_plot"]
+
+sim_path= parent_path+"/input_data/sim/"+sim_name+"/"
+network_results_path=parent_path+"/results/network/"
+try:
+    os.mkdir(network_results_path)
+except FileExistsError:
+    pass
 
 results_path=parent_path+"/results/sim/"
 try:
@@ -395,11 +378,7 @@ except FileExistsError:
     pass
 
 
-# results_path=sim_path+"/interval_"+str(t_initial_analysis)+"_"+str(t_final_analysis)+"interval_dim_"+str(interval_dim)+"/"
-# results_sub_path = results_path + "/soglia_attivi_" + str(perc_attivi)+"soglia_corr"+str(perc_corr)+"n_shift"+str(n_shift)+"_cl/"
-# with open(results_sub_path + 'clique_info.pkl', 'rb') as f:
-#     [id_neu_cliques, indici_cl, cl_spk, col, Isi_cliques, perc_pyr] = pickle.load(f)
-# print("connected components data loaded")
+
 
 
 list_of_list_spk=h5py.File(sim_path+"activity_network.hdf5", "r")
@@ -425,17 +404,24 @@ f_pos=h5py.File(filename_pos, "r")
 pos_neuron_list=list(f_pos.keys())
 
 
-distanza_massima=100
+
 bin_x=distanza_massima*2
 bin_y=distanza_massima*2
 bin_z=distanza_massima*2
-min_x=np.min(f_pos[pos_neuron_list[10]][:,1])
-min_y=np.min(f_pos[pos_neuron_list[10]][:,2])
-min_z=np.min(f_pos[pos_neuron_list[10]][:,3])
+min_x=np.inf
+min_y=np.inf
+min_z=np.inf
+max_x=-np.inf
+max_y=-np.inf
+max_z=-np.inf
+for j in range(pos_neuron_list.__len__()):
+    min_x=min(min_x,np.min(f_pos[pos_neuron_list[j]][:,1]))
+    min_y=min(min_y,np.min(f_pos[pos_neuron_list[j]][:,2]))
+    min_z=min(min_z,np.min(f_pos[pos_neuron_list[j]][:,3]))
 
-max_x=np.max(f_pos[pos_neuron_list[10]][:,1])
-max_y=np.max(f_pos[pos_neuron_list[10]][:,2])
-max_z=np.max(f_pos[pos_neuron_list[10]][:,3])
+    max_x=max(max_x,np.max(f_pos[pos_neuron_list[j]][:,1]))
+    max_y=max(max_y,np.max(f_pos[pos_neuron_list[j]][:,2]))
+    max_z=max(max_z,np.max(f_pos[pos_neuron_list[j]][:,3]))
 
 results_path=results_path+"area_activity_"+str(bin_x)+"_"+sigla+"/"
 try:
@@ -445,8 +431,8 @@ except FileExistsError:
 
 
 try:
-    with open(results_path+'info_firing_per_area_dist_max_'+str(distanza_massima)+'_'+sigla+'.pkl', 'rb') as f:
-        [cl_spk_pyr,col_pyr,id_neurons_near_to_center,id_center,posizioni_centri] = pickle.load(f)
+    with open(network_results_path+'info_neurons_distribution_in_voxels_area_dist_max_'+str(distanza_massima)+'.pkl', 'rb') as f:
+        [id_neurons_near_to_center,id_neurons_near_to_center_pyr,id_neurons_near_to_center_int,id_center,posizioni_centri] = pickle.load(f)
 except :
 
     posizioni_centri=[]
@@ -469,36 +455,62 @@ except :
 
     id_center=[]
     id_neurons_near_to_center=[]
+    id_neurons_near_to_center_pyr = []
+    id_neurons_near_to_center_int = []
     for i in range(posizioni_centri.__len__()):
         print(i)
         #aux=np.where(np.sum(np.abs(f_pos[pos_neuron_list[10]][:,1:]-posizioni_centri[i])< distanza_massima,axis=1)==3)
-        aux = np.where(np.sum(np.abs(f_pos[pos_neuron_list[10]][:, 1:] - posizioni_centri[i]) < distanza_massima, axis=1) == 3)[0] + 1
+        aux=[]
+        aux_int=[]
+        aux_pyr =[]
+        for j in range(pos_neuron_list.__len__()):
+            if j==10:
+                aux_pyr=f_pos[pos_neuron_list[j]][np.where(np.sum(np.abs(f_pos[pos_neuron_list[j]][:, 1:] - posizioni_centri[i]) < distanza_massima, axis=1) == 3)[0],0].astype(int).tolist()
+            else:
+                aux_int=aux_int+f_pos[pos_neuron_list[j]][np.where(np.sum(np.abs(f_pos[pos_neuron_list[j]][:, 1:] - posizioni_centri[i]) < distanza_massima, axis=1) == 3)[0],0].astype(int).tolist()
+            #aux = aux+f_pos[pos_neuron_list[j]][np.where(np.sum(np.abs(f_pos[pos_neuron_list[j]][:, 1:] - posizioni_centri[i]) < distanza_massima, axis=1) == 3)[0],0].astype(int).tolist()
+        aux=aux_pyr+aux_int
+        #print(f_pos[pos_neuron_list[10]][np.where(np.sum(np.abs(f_pos[pos_neuron_list[10]][:, 1:] - posizioni_centri[i]) < distanza_massima, axis=1) == 3)[0],0].astype(int).tolist())
         if (aux.__len__()>neu_min_per_blocco):
             id_center.append(i)
-            id_neurons_near_to_center.append(aux.tolist())
-    #
+            id_neurons_near_to_center.append(aux)
+            id_neurons_near_to_center_pyr.append(aux_pyr)
+            id_neurons_near_to_center_int.append(aux_int)
     # for i in range(posizioni_centri.__len__()):
     #     print(i)
     #     aux=np.where(np.sum(np.abs(f_pos[pos_neuron_list[10]][:,1:]-posizioni_centri[i])< distanza_massima,axis=1)==3)
     #     neurons_near_to_center[i]=[]
     #     neurons_near_to_center.append(aux[0]+1)
 
-    #interval=1000#np.ceil(posizioni_centri.__len__()/n_workers).astype(int)
-    #Parallel(n_jobs=n_workers, verbose=50, require='sharedmem')(delayed(calcola_neuroni_vicini)(t,interval) for t in range(0,posizioni_centri.__len__(),interval))
-    #test=26
     print(id_center.__len__())
-    [cl_spk_pyr,col_pyr]=save_raster_all2(id_neurons_near_to_center)
+    with open(network_results_path+'info_neurons_distribution_in_voxels_area_dist_max_'+str(distanza_massima)+'.pkl', 'wb') as f:  # Python 3: open(..., 'wb')
+        pickle.dump([id_neurons_near_to_center,id_neurons_near_to_center_pyr,id_neurons_near_to_center_int,id_center,posizioni_centri] , f)
+try:
+    with open(results_path + 'info_firing_per_area_dist_max_' + str(distanza_massima) +'_sigla_'+sigla+ '.pkl', 'rb') as f:
+        [voxel_spk_all,id_voxel_for_spk_all,voxel_spk_pyr, id_voxel_for_spk_pyr,voxel_spk_int, id_voxel_for_spk_int] = pickle.load(f)
+except:
+    # voxel_spk_all sono gli spikes voxel_spk[0] con gli id dei neuroni associati voxel_spk[1] nell'intervallo selezionato dei neuroni presenti in id_neurons_near_to_center, select_spk_for_voxel contiene gli id dei voxel in cui si verificano gli spikes presenti in voxel_spk_all
+    [voxel_spk_all,id_voxel_for_spk_all]=select_spk_for_voxel(id_neurons_near_to_center)
+    [voxel_spk_pyr, id_voxel_for_spk_pyr] = select_spk_for_voxel(id_neurons_near_to_center_pyr)
+    [voxel_spk_int, id_voxel_for_spk_int] = select_spk_for_voxel(id_neurons_near_to_center_int)
     # tot=0
     # for i in range(id_neurons_near_to_center.__len__()):
     #     tot=tot+id_neurons_near_to_center[i].__len__()
 
 
 
-    with open(results_path+'info_firing_per_area_dist_max_'+str(distanza_massima)+'_'+sigla+'.pkl', 'wb') as f:  # Python 3: open(..., 'wb')
-        pickle.dump([cl_spk_pyr,col_pyr,id_neurons_near_to_center,id_center,posizioni_centri] , f)
+    with open(results_path+'info_firing_per_area_dist_max_'+str(distanza_massima)+'_sigla_'+sigla+'.pkl', 'wb') as f:  # Python 3: open(..., 'wb')
+        pickle.dump([voxel_spk_all,id_voxel_for_spk_all,voxel_spk_pyr, id_voxel_for_spk_pyr,voxel_spk_int, id_voxel_for_spk_int] , f)
 
-
-
+if modality=='all':
+    id_voxel_for_spk=id_voxel_for_spk_all
+    voxel_spk=voxel_spk_all
+if modality=='pyr':
+    id_voxel_for_spk=id_voxel_for_spk_pyr
+    voxel_spk=voxel_spk_pyr
+if modality=='int':
+    id_voxel_for_spk=id_voxel_for_spk_int
+    voxel_spk=voxel_spk_int
 
 camera=dict(eye=dict(x=2, y=0, z=0))
 points = go.Scatter3d(x=f_pos[pos_neuron_list[10]][0::10, 1],
@@ -522,17 +534,17 @@ fig4 = go.Figure(data=points, layout=layout)
 fig5 = go.Figure(data=points, layout=layout)
 
 
-min_spk=200
-first_clique=True
-n_cubi=np.max(col_pyr.astype(int))+1
 
-fr=np.zeros((n_cubi),dtype=float)#np.zeros((np.unique(col_pyr.astype(int)).__len__()),dtype=float)
+first_clique=True
+n_cubi=np.max(id_voxel_for_spk.astype(int))+1
+
+fr=np.zeros((n_cubi),dtype=float)
 rad=np.zeros((n_cubi),dtype=float)
 period=np.zeros((n_cubi),dtype=float)
 hst=np.empty((n_cubi),dtype=object)
 block_plotted=[]
-for i in np.nditer(np.unique(col_pyr.astype(int))):#range(id_center.__len__()):
-    [hist_value, bins] = np.histogram(cl_spk_pyr[0, np.in1d(col_pyr, i)], 1000,[t_initial_analysis,t_final_analysis])
+for i in np.nditer(np.unique(id_voxel_for_spk.astype(int))):#range(id_center.__len__()):
+    [hist_value, bins] = np.histogram(voxel_spk[0, np.in1d(id_voxel_for_spk, i)], 1000,[t_initial_analysis,t_final_analysis])
     hst[i]=hist_value
     [f, a, p] = fourier_analysis(hist_value)
     fr[i] = f[np.argmax(a[1:]) + 1]
@@ -616,6 +628,7 @@ for i in np.nditer(np.unique(col_pyr.astype(int))):#range(id_center.__len__()):
                            z=[posizioni_centri[id_center[i],2]],
                            mode='markers',
                            name='pyr_cube_' + str(posizioni_centri[id_center[i], :]) + '_' + str(block_plotted.__len__() - 1),  # str(id_center[i]),
+                           text=str(fr[i]) + ' ' + str(rad[i]),
                            marker=dict(size=5,
                                        # colorscale='pinkyl',
                                        color=i/n_cubi,
@@ -631,7 +644,7 @@ for i in np.nditer(np.unique(col_pyr.astype(int))):#range(id_center.__len__()):
                            z=[posizioni_centri[id_center[i], 2]],
                            mode='markers',
                            name='pyr_cube_' + str(posizioni_centri[id_center[i], :]) + '_' + str(block_plotted.__len__() - 1),  # str(id_center[i]),
-                           text=str(fr[i]),
+                           text=str(fr[i])+' '+str(rad[i]),
                            marker=dict(size=5,
                                        # colorscale='pinkyl',
                                        color=px.colors.qualitative.Alphabet[min((fr[i]*10).astype(int),col_max)],
@@ -714,12 +727,14 @@ for i in np.nditer(np.unique(col_pyr.astype(int))):#range(id_center.__len__()):
         #     ),
         # )
 
-
-fig.write_html(results_path+"hist_firing_" + sigla + "_min_"+str(min_spk)+"_min_neu_Xb_"+str(neu_min_per_blocco_to_plot)+".html")
-fig_norm.write_html(results_path+"hist_norm_firing_" + sigla + "_min_"+str(min_spk)+"_min_neu_Xb_"+str(neu_min_per_blocco_to_plot)+".html")
-fig3.write_html(results_path+"position_centers_" + sigla + "_min_neu_spk_"+str(min_spk)+"_min_neu_Xb_"+str(neu_min_per_blocco_to_plot)+".html")
-fig4.write_html(results_path+"position_centers_" + sigla + "_min_"+str(min_spk)+"_min_neu_Xb_"+str(neu_min_per_blocco_to_plot)+"_col_freq.html")
-fig5.write_html(results_path+"position_centers_" + sigla + "_min_"+str(min_spk)+"_min_neu_Xb_"+str(neu_min_per_blocco_to_plot)+"_col_phase.html")
+try:
+    fig.write_html(results_path+"hist_firing_" + sigla + "_min_neu_spk_"+str(min_spk)+"_min_neu_Xb_"+str(neu_min_per_blocco_to_plot)+modality+".html")
+    fig_norm.write_html(results_path+"hist_norm_firing_" + sigla + "_min_neu_spk_"+str(min_spk)+"_min_neu_Xb_"+str(neu_min_per_blocco_to_plot)+modality+".html")
+except:
+    pass
+fig3.write_html(results_path+"position_centers_" + sigla + "_min_neu_spk_"+str(min_spk)+"_min_neu_Xb_"+str(neu_min_per_blocco_to_plot)+modality+".html")
+fig4.write_html(results_path+"position_centers_" + sigla + "_min_neu_spk_"+str(min_spk)+"_min_neu_Xb_"+str(neu_min_per_blocco_to_plot)+modality+"_col_freq.html")
+fig5.write_html(results_path+"position_centers_" + sigla + "_min_neu_spk_"+str(min_spk)+"_min_neu_Xb_"+str(neu_min_per_blocco_to_plot)+modality+"_col_phase.html")
 
 #
 # fig2.write_html( "ratio_stim_firing_" + sigla + ".html")
@@ -758,13 +773,13 @@ picchi_per_int_find=np.zeros((block_plotted.__len__()),dtype=bool)
 sec_di_sim=(t_final_analysis-t_initial_analysis)/1000
 from scipy.signal import find_peaks
 
-aux=[8187,1728,7650]
-aux=[7987,1728,7650]
-aux=[8387,4128,9850]
+#aux=[8187,1728,7650]
+#aux=[7987,1728,7650]
+#aux=[8387,4128,9850]
 
 for i in range(block_plotted.__len__()):
-    if((posizioni_centri[id_center[np.array(block_plotted).astype(int)[i]]]==aux).sum()==3):
-        print(i)
+    #if((posizioni_centri[id_center[np.array(block_plotted).astype(int)[i]]]==aux).sum()==3):
+    #    print(i)
     peaks, properties = find_peaks(hst[block_plotted[i]], prominence=0)
     preminenza[i] = properties['prominences'][properties['prominences'].argsort()[-int(sec_di_sim / period[block_plotted[i]]):]]#seleziona int(sim_durata/periodo) maggiori preminenze
     picchi[i] = peaks[properties['prominences'].argsort()[-int(sec_di_sim / period[block_plotted[i]]):]]#seleziona int(sim_durata/periodo) picchi con maggior preminenza
@@ -802,6 +817,7 @@ bp=[]
 for i in range(block_plotted.__len__()):
     bp.append(block_plotted[i].tolist())
     col[i]=min(15,int(pr_mean[i]/pr_mean.max() * col_max))
+    col[i] = int(pr_mean[i] / pr_mean.max() * col_max)
 
 
 fig7 = go.Figure(data=points, layout=layout)
@@ -821,7 +837,7 @@ fig7.add_scatter3d(x=posizioni_centri[np.array(id_center)[bp], 0],
                        )
 
 fig7.write_html(results_path + "prominence_" + sigla + "_min_" + str(min_spk) + "_min_neu_Xb_" + str(
-        neu_min_per_blocco_to_plot) + ".html")
+        neu_min_per_blocco_to_plot) + modality+".html")
 
 
 
@@ -921,7 +937,7 @@ fig9.write_html(results_path + "prominence_" + sigla + "_min_" + str(min_spk) + 
 color_discrete_sequence=px.colors.qualitative.Alphabet
 id=1
 n_predecessori=2
-plot_prerdecessori(id,n_predecessori)
+#plot_prerdecessori(id,n_predecessori)
 #neuron_selected=id_neurons_near_to_center[block_plotted[id]]
 #
 # from dash import Dash, dcc, html, Input, Output
