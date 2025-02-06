@@ -4,6 +4,5 @@
             "end_time": 40000,
             "temporal_bin_size":200
         },
-    "n_pezzi":100,
-	"folder_simulation_name":"sl2_4hz_2_500_4_1_1_1"
+	"folder_simulation_name":"sl9_5-1-5-1"
 }

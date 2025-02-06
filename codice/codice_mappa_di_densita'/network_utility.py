@@ -12,14 +12,18 @@ import networkx as nx
 
 def compute_sub_net( n_bin_x,n_bin_y,n_bin_z):
 
-    os.chdir('C:\\Users\\emili\\Desktop\\CNR\\2023-24\\figure4ae_data_code\\codice_python')
 
+    current_path = os.getcwd()
+    parent_path = os.path.dirname(current_path)
+    parent_path = os.path.dirname(parent_path)
+    data_net_path = parent_path + "/input_data/data_net/"
+    results_path = parent_path + "/results/network/"
     min_connection_degree=10
 
 
-    filename_in = "connections_inh.hdf5"
-    filename_PC = "SP_PC_to_SP_PC.hdf5"
-    filename_pos="positions.hdf5"
+    filename_in = data_net_path+"connections_inh.hdf5"
+    filename_PC = data_net_path+"SP_PC_to_SP_PC.hdf5"
+    filename_pos=data_net_path+"positions.hdf5"
     #with  as f:
     f_in=h5py.File(filename_in, "r")
     in_connection_list=list(f_in.keys())
@@ -40,14 +44,9 @@ def compute_sub_net( n_bin_x,n_bin_y,n_bin_z):
 
 
     threshold_connection=800
-    path='C:\\Users\\emili\\Desktop\\CNR\\2023-24\\figure4ae_data_code\\codice_python\\results_bin_x_'+str(n_bin_x)+'_bin_y_'+str(n_bin_y)+'_bin_z_'+str(n_bin_z)+'\\'
 
     try:
-        os.mkdir(path)
-    except FileExistsError:
-        pass
-    try:
-        with open(path+'neurons_concentration.pkl', 'rb') as f:
+        with open(results_path+'neurons_concentration_bin_x_'+str(n_bin_x)+'_bin_y_'+str(n_bin_y)+'_bin_z_'+str(n_bin_z)+'.pkl', 'rb') as f:
             [n_neu_in_sub_pyr,sub_net_pos_pyr,sub_net_pyr,n_neu_in_sub_int,sub_net_pos_int,sub_net_int] = pickle.load(f)
     except:
         variabilità_spaziale=np.zeros([3,2],int)
@@ -99,7 +98,7 @@ def compute_sub_net( n_bin_x,n_bin_y,n_bin_z):
                         sub_net_pos_int.append([i + bin_x / 2, j + bin_y / 2, k + bin_z / 2])
                         n_neu_in_sub_int.append(sub_net_int[-1].shape[0])
                         n_neu = n_neu + sub_net_int[-1].shape[0]
-        with open(path + 'neurons_concentration.pkl', 'wb') as f:
+        with open(results_path + 'neurons_concentration_bin_x_'+str(n_bin_x)+'_bin_y_'+str(n_bin_y)+'_bin_z_'+str(n_bin_z)+'.pkl', 'wb') as f:
                 pickle.dump([n_neu_in_sub_pyr, sub_net_pos_pyr, sub_net_pyr, n_neu_in_sub_int, sub_net_pos_int,
                  sub_net_int], f)
 

@@ -9,13 +9,10 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import os
 
-filename_pos="positions.hdf5"
-#with  as f:
-f_pos=h5py.File(filename_pos, "r")
-pos_neuron_list=list(f_pos.keys())
 
 
-type_to_plot="pyr"#"int"#
+type_to_plot="int"#"pyr"#
+
 [n_neu_in_sub_pyr,sub_net_pos_pyr,sub_net_pyr,n_neu_in_sub_int,sub_net_pos_int,sub_net_int]=compute_sub_net( 20,34,34)
 
 sub_net_pos_pyr=np.array(sub_net_pos_pyr)
@@ -29,45 +26,34 @@ fig =px.scatter_3d(x=sub_net_pos_int[:,0], y=sub_net_pos_int[:, 1], z=sub_net_po
 
 
 
-path_slice_folder="C:/Users/emili/Desktop/CNR/2023-24/figure4ae_data_code/codice_python/mouse_data/"
-list_of_list_spk=[]
+current_path = os.getcwd()
+parent_path = os.path.dirname(current_path)
+parent_path = os.path.dirname(parent_path)
+data_net_path=parent_path+"/input_data/data_net/"
+
+results_path=parent_path+"/results/network/"
+
+filename_pos=data_net_path+"positions.hdf5"
+#with  as f:
+f_pos=h5py.File(filename_pos, "r")
+pos_neuron_list=list(f_pos.keys())
 
 
-setting_file="./sim_configuration.json"
-sim_conf = json.load(open('%s'%(setting_file), 'r'))
-path = sim_conf['Path']
-path_res=path+"concentration_maps/"
-
-
-try:
-    os.mkdir(path_res)
-except FileExistsError:
-    pass
-
-start_time = sim_conf['Time_setting']['Start_time']
-simulation_time= sim_conf['Time_setting']['simulation_time']
-bin_size=sim_conf['Time_setting']['temporal_bin_size']
-
-
-list_of_list_spk = h5py.File(path + "activity_network.hdf5", "r")
-spk_list = list_of_list_spk['spikes'].astype('float64')[:]
 neuron_slice=np.empty((19),dtype=object)
 neuron_spk_slice=np.empty((19),dtype=object)
 hists=np.empty((19),dtype=object)
 spk_sl=np.empty((19),dtype=object)
 i=1
-ns=pd.read_csv(path_slice_folder+'Slice_'+str(i)+'.csv', header=None)
-plt.figure()
+
+
 
 color = cm.tab20# cm.rainbow(np.linspace(0, 1, 20))
 for i in range(19):
-
-    neuron_slice[i]=[5]
-    neuron_slice[i]=pd.read_csv(path_slice_folder+'Slice_'+str(i)+'.csv')
+    neuron_slice[i]=pd.read_csv(data_net_path+'Slice_'+str(i)+'.csv')
 
 color = cm.tab20# cm
 
-slice_to_plot=[]
+slice_to_plot=[3,4,5]
 from dash import Dash, dcc, html, Input, Output
 import plotly.express as px
 
@@ -135,9 +121,9 @@ def update_bar_chart(slider_range):
                                   color="yellow",#color.colors[i],
                                   showscale=True, opacity=0.05), )
     if type_to_plot == "pyr":
-        fig.write_html(path_res + "concentration_map_pyr.html")
+        fig.write_html(results_path + "concentration_map_pyr.html")
     else:
-        fig.write_html(path_res + "concentration_map_int.html")
+        fig.write_html(results_path + "concentration_map_int.html")
     return fig
 
 

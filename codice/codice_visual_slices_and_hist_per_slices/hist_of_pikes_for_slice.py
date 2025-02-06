@@ -38,15 +38,12 @@ try:
 except FileExistsError:
     pass
 
-results_path=results_path+"hist_slices_/"
+results_path=results_path+"hist_slices/"
 try:
     os.mkdir(results_path)
 except FileExistsError:
     pass
 
-
-filename_in = data_net_path+"connections_inh.hdf5"
-filename_PC = data_net_path+"SP_PC_to_SP_PC.hdf5"
 filename_pos=data_net_path+"positions.hdf5"
 
 f_pos=h5py.File(filename_pos, "r")
@@ -100,6 +97,7 @@ for i in range(19):
     bins_centers=bins[:-1]+(bins[1:]-bins[:-1])/2
 
     if first_slice:
+
         first_slice = False
         fig = go.Figure(data=go.Scatter(
             # x=cl_spk[0, np.in1d(col, indici_cl)],
@@ -160,6 +158,8 @@ for i in range(19):
         if n_neu_firing_slice[i].sum()>0:
             n_neu_firing_slice_norm[i]=n_neu_firing_slice[i]/n_neu_firing_slice[i].sum()
             n_neu_firing_slice_norm_neu[i] = n_neu_firing_slice[i] / neuron_slice[i].__len__()
+            n_neu_firing_slice_all=n_neu_firing_slice[i]
+            n_neu_all=neuron_slice[i].__len__()
         else:
             n_neu_firing_slice_norm[i] = n_neu_firing_slice[i]
         fig_n_neu_norm = go.Figure(data=go.Scatter(
@@ -198,14 +198,30 @@ for i in range(19):
 
         ))
 
-
-
-        points = go.Scatter3d(x=ns['x'][neuron_selected], y=ns['y'][neuron_selected], z=ns['z'][neuron_selected], mode='markers',
+        points = go.Scatter3d(x=f_pos[pos_neuron_list[10]][0::10, 1],
+                              y=f_pos[pos_neuron_list[10]][0::10, 2],
+                              z=f_pos[pos_neuron_list[10]][0::10, 3],
+                              name='network subsampling ',
+                              mode='markers',
                               marker=dict(size=1,
-                                          color='blue',
-                                          showscale=False, opacity=0.3), )
+                                          color='gray',
+                                          # showscale=False,
+                                          opacity=0.3),
+                              )
+
+        # points = go.Scatter3d(x=ns['x'][neuron_selected], y=ns['y'][neuron_selected], z=ns['z'][neuron_selected], mode='markers',
+        #                       marker=dict(size=1,
+        #                                   color='blue',
+        #                                   showscale=False, opacity=0.3), )
         fig_slice = go.Figure(data=points)
+
+        fig_slice.add_scatter3d(x=ns['x'][neuron_selected], y=ns['y'][neuron_selected], z=ns['z'][neuron_selected],
+                                mode='markers',
+                                marker=dict(size=1,
+                                            color=px.colors.qualitative.Alphabet[i],
+                                            showscale=False, opacity=0.3), )
     else:
+
         fig.add_scatter(
             x=(bins[1:] + bins[:-1]) / 2,
             y=hist,
@@ -262,6 +278,8 @@ for i in range(19):
         if n_neu_firing_slice[i].sum() > 0:
             n_neu_firing_slice_norm[i] = n_neu_firing_slice[i] / n_neu_firing_slice[i].sum()
             n_neu_firing_slice_norm_neu[i] = n_neu_firing_slice[i] / neuron_slice[i].__len__()
+            n_neu_firing_slice_all = n_neu_firing_slice_all + n_neu_firing_slice[i]
+            n_neu_all = n_neu_all + neuron_slice[i].__len__()
         else:
             n_neu_firing_slice_norm[i] = n_neu_firing_slice[i]
         fig_n_neu_norm.add_scatter(
@@ -308,13 +326,30 @@ for i in range(19):
                                        color=px.colors.qualitative.Alphabet[i],
                                        showscale=False, opacity=0.3), )
 
+fig_n_neu_norm_neu.add_scatter(
+        # x=cl_spk[0, np.in1d(col, indici_cl)],
+        x=(bins[1:] + bins[:-1]) / 2,
+        y= n_neu_firing_slice_all / n_neu_all,
+        name='all',
+        # mode='markers',
+        marker=dict(
+            # symbol=sim,
+            # symbol=142,
 
-    fig.write_html(results_path + "hist_firing_slices_bin_size_"+str(bin_size)+"_perc_"+str(1-slices_perc_excluded)+mod+".html")
-    fig_norm.write_html(results_path + "hist_norm_firing_slices_bin_size_"+str(bin_size)+"_perc_"+str(1-slices_perc_excluded)+mod+".html")
-    fig_n_neu.write_html(results_path + "n_neu_firing_slices_bin_size_" + str(bin_size) + "_perc_" + str(1 - slices_perc_excluded) +mod+ ".html")
-    fig_n_neu_norm.write_html(results_path + "n_neu_firing_norm_slices_bin_size_" + str(bin_size) + "_perc_" + str(1 - slices_perc_excluded) +mod+ ".html")
-    fig_n_neu_norm_neu.write_html(results_path + "n_neu_firing_norm_su_tot_neu_slices_bin_size_" + str(bin_size) + "_perc_" + str(1 - slices_perc_excluded) + mod + ".html")
-    fig_slice.write_html(results_path + "slices_visualization_perc_"+str(1-slices_perc_excluded)+".html")
+            size=2,
+            color=color.colors[i+1],  # color_discrete_sequence[i],  # set color equal to a variable
+            # colorscale='pinkyl', # one of plotly colorscales
+            showscale=True
+        ),
+
+)
+
+fig.write_html(results_path + "hist_firing_slices_bin_size_"+str(bin_size)+"_perc_"+str(1-slices_perc_excluded)+mod+".html")
+fig_norm.write_html(results_path + "hist_norm_firing_slices_bin_size_"+str(bin_size)+"_perc_"+str(1-slices_perc_excluded)+mod+".html")
+fig_n_neu.write_html(results_path + "n_neu_firing_slices_bin_size_" + str(bin_size) + "_perc_" + str(1 - slices_perc_excluded) +mod+ ".html")
+fig_n_neu_norm.write_html(results_path + "n_neu_firing_norm_slices_bin_size_" + str(bin_size) + "_perc_" + str(1 - slices_perc_excluded) +mod+ ".html")
+fig_n_neu_norm_neu.write_html(results_path + "n_neu_firing_norm_su_tot_neu_slices_bin_size_" + str(bin_size) + "_perc_" + str(1 - slices_perc_excluded) + mod + ".html")
+fig_slice.write_html(results_path + "slices_visualization_perc_"+str(1-slices_perc_excluded)+".html")
 
 
 

@@ -334,6 +334,7 @@ neu_min_per_blocco_to_plot=sim_conf['minimum_number_of_neurons_for_voxel_to_plot
 sim_name=sim_conf["folder_simulation_name"]#"sl9_9-1-9-1"
 distanza_massima=int(sim_conf['side_length_of_the_voxel']/2)
 min_spk=sim_conf["minimum_mean_number_of_spikes_for_neuron_in_voxel_to_plot"]
+bin_size = sim_conf['bins_dimension']
 
 sim_path= parent_path+"/input_data/sim/"+sim_name+"/"
 network_results_path=parent_path+"/results/network/"
@@ -534,8 +535,9 @@ pos_c_x=[]
 pos_c_y=[]
 pos_c_z=[]
 color_phase=[]
+n_bin=int((t_final_analysis-t_initial_analysis)/bin_size)
 for i in np.nditer(np.unique(id_voxel_for_spk.astype(int))):#range(id_center.__len__()):
-    [hist_value, bins] = np.histogram(voxel_spk[0, np.in1d(id_voxel_for_spk, i)], 2000,[t_initial_analysis,t_final_analysis])
+    [hist_value, bins] = np.histogram(voxel_spk[0, np.in1d(id_voxel_for_spk, i)], n_bin,[t_initial_analysis,t_final_analysis])
     hst[i]=hist_value
     [f, a, p,dft] = fourier_analysis(hist_value)
     fr[i] = f[np.argmax(a[1:]) + 1]
